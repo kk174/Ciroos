@@ -49,8 +49,9 @@ data:
     FlaskInstrumentor().instrument_app(app)
     RequestsInstrumentor().instrument()
 
-    # C2 backend service URL (internal)
-    BACKEND_SERVICE_URL = "http://apm-backend-app.petclinic.svc.cluster.local:8080"
+    # C2 backend service URL (internal) - read from environment variable
+    import os
+    BACKEND_SERVICE_URL = os.getenv('BACKEND_SERVICE_URL', 'http://ac3dc550dad9847ea805e20c963ee7ba-39ea100930485fc4.elb.us-west-2.amazonaws.com')
 
     @app.route('/health')
     def health():
