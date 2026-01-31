@@ -56,7 +56,7 @@ cd /Users/kanu/Desktop/Ciroos
 - Verify: Both clusters showing data
 
 **4. Open Browser Tabs**
-- Application: http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com
+- Application: http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com
 - AWS WAF Console
 - AWS Load Balancers Console
 - Splunk Observability Cloud

@@ -62,7 +62,7 @@ kubectl get svc -n petclinic apm-backend-app -o jsonpath='{.status.loadBalancer.
 ```
 
 **Record these URLs:**
-- C1 Frontend: `http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com`
+- C1 Frontend: `http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com`
 - C2 Backend: `http://ac3dc550dad9847ea805e20c963ee7ba-39ea100930485fc4.elb.us-west-2.amazonaws.com`
 
 ### 3. Pre-load Browser Tabs
@@ -71,7 +71,7 @@ Open these URLs in separate browser tabs:
 
 **Tab 1: Application Frontend**
 ```
-http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/health
+http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/health
 ```
 
 **Tab 2: AWS WAF Console**
@@ -158,7 +158,7 @@ chmod +x inject-fault.sh
 
 **URL:**
 ```
-http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/health
+http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/health
 ```
 
 **Expected Response:**
@@ -181,7 +181,7 @@ http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws
 
 **URL:**
 ```
-http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/api/orders
+http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/api/orders
 ```
 
 **Expected Response:**
@@ -543,7 +543,7 @@ aws ec2 describe-security-groups \
 
 **Browser Tab 1:** Navigate to /api/checkout endpoint
 ```
-http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/api/checkout
+http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/api/checkout
 ```
 
 **Refresh 3-4 times** to show:
@@ -596,7 +596,7 @@ apm-backend-app-7d8f9c5b6d-n7k5p     1/1     Running             0     15s
 
 **Try /api/checkout endpoint multiple times:**
 ```
-http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/api/checkout
+http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/api/checkout
 ```
 
 **During the fault window (10-15 seconds), expected responses:**

@@ -216,7 +216,7 @@ cd /Users/kanu/Desktop/Ciroos
 
 **C1 Frontend URL:**
 ```
-http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com
+http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com
 ```
 
 **Test each endpoint:**
@@ -250,7 +250,7 @@ Open these in separate tabs and arrange them:
 
 1. **Application Frontend**
    ```
-   http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/health
+   http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/health
    ```
 
 2. **AWS WAF Console**

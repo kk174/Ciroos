@@ -9,7 +9,7 @@
 
 ### C1 (us-east-1) - Frontend Cluster
 **Type:** Internet-Facing (Public)
-**URL:** `http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com`
+**URL:** `http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com`
 **Status:** ✅ **ACCESSIBLE FROM INTERNET**
 
 ### C2 (us-west-2) - Backend Cluster
@@ -23,11 +23,11 @@
 
 ### 1. Health Check Endpoint
 **Purpose:** Load balancer health monitoring
-**URL:** `http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/health`
+**URL:** `http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/health`
 
 **Request:**
 ```bash
-curl http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/health
+curl http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/health
 ```
 
 **Response:**
@@ -44,11 +44,11 @@ curl http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amaz
 
 ### 2. Application Info Endpoint
 **Purpose:** Display cluster and application metadata
-**URL:** `http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/info`
+**URL:** `http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/info`
 
 **Request:**
 ```bash
-curl http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/info
+curl http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/info
 ```
 
 **Response:**
@@ -67,11 +67,11 @@ curl http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amaz
 
 ### 3. Status Endpoint
 **Purpose:** Service status check
-**URL:** `http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/status`
+**URL:** `http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/status`
 
 **Request:**
 ```bash
-curl http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/status
+curl http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/status
 ```
 
 **Response:**
@@ -89,11 +89,11 @@ curl http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amaz
 
 ### 4. Error Injection Endpoint
 **Purpose:** Simulate server errors for observability testing
-**URL:** `http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/error`
+**URL:** `http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/error`
 
 **Request:**
 ```bash
-curl http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/error
+curl http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/error
 ```
 
 **Response:**
@@ -115,11 +115,11 @@ curl http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amaz
 
 ### 5. Random Failure Endpoint
 **Purpose:** Simulate intermittent failures (30% error rate)
-**URL:** `http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/random`
+**URL:** `http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/random`
 
 **Request:**
 ```bash
-curl http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/random
+curl http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/random
 ```
 
 **Success Response (70% probability):**
@@ -151,11 +151,11 @@ curl http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amaz
 
 ### 6. Root/Home Endpoint
 **Purpose:** Main application page
-**URL:** `http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/`
+**URL:** `http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/`
 
 **Request:**
 ```bash
-curl http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/
+curl http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/
 ```
 
 **Response:**
@@ -268,7 +268,7 @@ curl http://a11e332ddf414470781dcffadfcbff6e-02e4279cfc7d48f9.elb.us-west-2.amaz
 
 ```bash
 #!/bin/bash
-C1_URL="http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com"
+C1_URL="http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com"
 
 echo "Testing C1 (Frontend) Endpoints"
 echo "================================"
@@ -298,7 +298,7 @@ curl -s $C1_URL/ | head -5
 #!/bin/bash
 # Generate load on error endpoint for Splunk demo
 
-C1_URL="http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com"
+C1_URL="http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com"
 
 echo "Generating error traffic for Splunk observability demo..."
 
@@ -366,7 +366,7 @@ kubectl logs -n observability -l app=otel-collector --tail=100 | grep demo-app
 
 ```bash
 # Should succeed
-curl -I http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/health
+curl -I http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/health
 
 # Expected: HTTP/1.1 200 OK
 ```
@@ -401,7 +401,7 @@ The tool will confirm:
 ```bash
 # Hit healthy endpoints multiple times
 for i in {1..20}; do
-  curl -s http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/health
+  curl -s http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/health
   sleep 1
 done
 ```
@@ -416,7 +416,7 @@ done
 ```bash
 # Generate error traffic
 for i in {1..50}; do
-  curl -s http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/error > /dev/null
+  curl -s http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/error > /dev/null
 done
 ```
 
@@ -433,7 +433,7 @@ done
 ```bash
 # Hit random endpoint repeatedly
 for i in {1..100}; do
-  STATUS=$(curl -s -w "%{http_code}" -o /dev/null http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/random)
+  STATUS=$(curl -s -w "%{http_code}" -o /dev/null http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/random)
   echo "Request $i: HTTP $STATUS"
   sleep 0.5
 done
@@ -521,12 +521,12 @@ kubectl get pods -n petclinic -l app=demo-app
 
 | Endpoint | C1 URL | Purpose | Expected Status |
 |----------|--------|---------|-----------------|
-| /health | [Link](http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/health) | Health check | 200 |
-| /info | [Link](http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/info) | App metadata | 200 |
-| /status | [Link](http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/status) | Service status | 200 |
-| /error | [Link](http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/error) | Error injection | 500 |
-| /random | [Link](http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/random) | Random failures | 200 or 503 |
-| / | [Link](http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com/) | Home page | 200 |
+| /health | [Link](http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/health) | Health check | 200 |
+| /info | [Link](http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/info) | App metadata | 200 |
+| /status | [Link](http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/status) | Service status | 200 |
+| /error | [Link](http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/error) | Error injection | 500 |
+| /random | [Link](http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/random) | Random failures | 200 or 503 |
+| / | [Link](http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com/) | Home page | 200 |
 
 **Note:** Click links to test directly in browser (C1 only - C2 is not publicly accessible)
 

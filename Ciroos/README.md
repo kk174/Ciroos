@@ -488,7 +488,7 @@ kubectl get pods -n petclinic -o wide
 
 **C1 Frontend (Public):**
 ```bash
-C1_URL="http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com"
+C1_URL="http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com"
 
 # Health check
 curl $C1_URL/health

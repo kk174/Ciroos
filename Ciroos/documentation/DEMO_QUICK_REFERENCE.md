@@ -8,7 +8,7 @@
 
 | Tab | Purpose | URL |
 |-----|---------|-----|
-| 1 | **Application Frontend** | http://ab565512bbcbf4cf5ac5ba54c67d8071-4607189aed878535.elb.us-east-1.amazonaws.com |
+| 1 | **Application Frontend** | http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws.com |
 | 2 | **AWS WAF Console** | https://console.aws.amazon.com/wafv2/homev2/web-acls?region=us-east-1 |
 | 3 | **AWS Load Balancers** | https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#LoadBalancers: |
 | 4 | **Splunk K8s Navigator** | https://app.us1.signalfx.com/ → Infrastructure → Kubernetes |
