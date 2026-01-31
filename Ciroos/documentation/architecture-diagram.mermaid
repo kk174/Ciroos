@@ -1,0 +1,119 @@
+```mermaid
+graph TB
+    %% Title and Internet Layer
+    Internet[("Internet<br/>☁")]
+
+    %% WAF
+    WAF["AWS WAF<br/>(Regional)"]
+
+    %% Region 1: us-east-1
+    subgraph Region1["AWS Region: us-east-1 (C1 - Frontend)"]
+        subgraph VPC1["VPC C1<br/>10.0.0.0/16"]
+            ALB1["Application Load Balancer<br/>(Internet-facing)<br/>ab565512...elb.us-east-1..."]
+
+            subgraph EKS1["EKS Cluster: petclinic-c1<br/>Kubernetes 1.30"]
+                C1App["apm-test-app<br/>(Frontend Service)<br/><br/>• Python Flask<br/>• OpenTelemetry instrumented<br/>• Calls C2 backend APIs<br/>• Distributed tracing"]
+
+                C1OTel["Splunk OTel Collector<br/><br/>Agent DaemonSet (2 pods)<br/>Cluster Receiver (1 pod)<br/><br/>Version: 0.143.0"]
+            end
+
+            RDS1["RDS MySQL<br/>db.t3.micro<br/><br/>Database for demo data"]
+
+            SG1["🔒 Security Group<br/>Allows: HTTP/HTTPS<br/>from Internet"]
+        end
+    end
+
+    %% VPC Peering
+    Peering["VPC Peering Connection<br/>10.0.0.0/16 ↔ 10.1.0.0/16<br/>Private connectivity"]
+
+    %% Region 2: us-west-2
+    subgraph Region2["AWS Region: us-west-2 (C2 - Backend)"]
+        subgraph VPC2["VPC C2<br/>10.1.0.0/16"]
+            NLB2["Network Load Balancer<br/>(Internal Only)<br/>ac3dc550...elb.us-west-2..."]
+
+            subgraph EKS2["EKS Cluster: petclinic-c2<br/>Kubernetes 1.30"]
+                C2App["apm-backend-service<br/>(Backend Service)<br/><br/>• Python Flask<br/>• OpenTelemetry instrumented<br/>• Inventory API<br/>• Shipping API<br/>• Payment processing<br/>• 20% simulated failures"]
+
+                C2OTel["Splunk OTel Collector<br/><br/>Agent DaemonSet (2 pods)<br/>Cluster Receiver (1 pod)<br/><br/>Version: 0.143.0"]
+            end
+
+            SG2["🔒 Security Group<br/>Allows: HTTP from C1 VPC only<br/>(10.0.0.0/16)"]
+        end
+    end
+
+    %% Splunk Observability Cloud
+    Splunk["Splunk Observability Cloud<br/>Realm: us1<br/><br/>• Infrastructure Metrics (SignalFx)<br/>• APM Traces (OTLP)<br/>• Service Map<br/>• Kubernetes Navigator<br/>• Alerts & Dashboards"]
+
+    %% Connections
+    Internet -->|"HTTPS Traffic"| WAF
+    WAF -->|"Filtered"| ALB1
+    ALB1 -->|"HTTP"| C1App
+    C1App -.->|"Database Query"| RDS1
+    C1App -->|"Traces & Metrics<br/>(OTLP)"| C1OTel
+    C1App -.->|"Cross-Region<br/>API Calls<br/>(HTTP)"| Peering
+    Peering -.->|"Private<br/>Connectivity"| NLB2
+    NLB2 -->|"HTTP"| C2App
+    C2App -->|"Traces & Metrics<br/>(OTLP)"| C2OTel
+    C1OTel ==>|"SignalFx + OTLP"| Splunk
+    C2OTel ==>|"SignalFx + OTLP"| Splunk
+
+    %% Styling
+    classDef regionStyle fill:#fff2cc,stroke:#d6b656,stroke-width:3px
+    classDef vpcStyle fill:#e1d5e7,stroke:#9673a6,stroke-width:2px
+    classDef eksStyle fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px
+    classDef appStyle fill:#fff2cc,stroke:#d6b656,stroke-width:1px
+    classDef lbStyle fill:#d5e8d4,stroke:#82b366,stroke-width:2px
+    classDef otelStyle fill:#e1d5e7,stroke:#9673a6,stroke-width:1px
+    classDef splunkStyle fill:#b1ddf0,stroke:#10739e,stroke-width:3px
+    classDef securityStyle fill:#f8cecc,stroke:#b85450,stroke-width:1px,stroke-dasharray:5
+    classDef peeringStyle fill:#f5f5f5,stroke:#666666,stroke-width:2px
+    classDef wafStyle fill:#f8cecc,stroke:#b85450,stroke-width:2px
+
+    class Region1,Region2 regionStyle
+    class VPC1,VPC2 vpcStyle
+    class EKS1,EKS2 eksStyle
+    class C1App,C2App appStyle
+    class ALB1,NLB2,RDS1 lbStyle
+    class C1OTel,C2OTel otelStyle
+    class Splunk splunkStyle
+    class SG1,SG2 securityStyle
+    class Peering peeringStyle
+    class WAF wafStyle
+```
+
+## Key Architecture Features
+
+✓ **Dual-region EKS deployment** (us-east-1 + us-west-2)
+✓ **VPC peering** for private cross-region connectivity
+✓ **WAF protection** on public ALB in C1
+✓ **Internal-only NLB** in C2 (no public access)
+✓ **OpenTelemetry distributed tracing** across regions
+✓ **Splunk Observability Cloud** integration
+✓ **Infrastructure metrics + APM** in single platform
+✓ **W3C TraceContext propagation** for service map
+
+## Legend
+
+- **Solid arrows** (→): HTTP/HTTPS traffic flow
+- **Dotted arrows** (-.->): Cross-region or database connections
+- **Thick double arrows** (==>): Telemetry data export to Splunk
+- **🔒**: Security group boundaries
+
+## How to Use This Diagram
+
+### Option 1: Render with Mermaid Live Editor
+1. Visit https://mermaid.live/
+2. Paste the entire mermaid code block
+3. Export as PNG, SVG, or PDF
+4. Import into Lucid Chart or PowerPoint
+
+### Option 2: Convert to Other Formats
+- Use `mmdc` (Mermaid CLI) to convert to PNG/SVG
+- Import the resulting image into Lucid Chart
+- Use as reference for manual diagram creation
+
+### Option 3: GitHub/GitLab Rendering
+- This Mermaid diagram renders automatically in:
+  - GitHub README.md files
+  - GitLab markdown
+  - Many documentation platforms

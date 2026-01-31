@@ -1,0 +1,62 @@
+# ============================================
+# terraform.tfvars.example
+# ============================================
+# Copy this file to terraform.tfvars and fill in your values
+# 
+# IMPORTANT: terraform.tfvars contains sensitive data!
+#            NEVER commit it to Git!
+#
+# USAGE:
+#   cp terraform.tfvars.example terraform.tfvars
+#   # Edit terraform.tfvars with your values
+#   terraform apply
+
+# ------------------------------
+# General Settings
+# ------------------------------
+aws_region   = "us-east-1"
+environment  = "dev"
+project_name = "globalretail"
+
+# ------------------------------
+# EKS Settings
+# ------------------------------
+cluster_name       = "globalretail-demo"
+cluster_version    = "1.28"
+node_instance_type = "t3.medium"
+node_desired_count = 2
+node_min_count     = 1
+node_max_count     = 4
+
+# ------------------------------
+# RDS Settings
+# ------------------------------
+db_instance_class    = "db.t3.micro"
+db_name              = "ecommerce"
+db_username          = "dbadmin"
+db_password          = "CHANGE_ME_use_a_strong_password_123!"  # CHANGE THIS!
+db_allocated_storage = 20
+
+# ------------------------------
+# ElastiCache Settings
+# ------------------------------
+redis_node_type = "cache.t3.micro"
+
+# ============================================
+# HOW TO USE THIS FILE:
+# ============================================
+# 1. Copy to terraform.tfvars:
+#      cp terraform.tfvars.example terraform.tfvars
+#
+# 2. Edit terraform.tfvars with your actual values
+#    (especially the db_password!)
+#
+# 3. Run terraform:
+#      terraform init
+#      terraform plan
+#      terraform apply
+#
+# SECURITY TIPS:
+# - Use a password manager to generate db_password
+# - Consider using AWS Secrets Manager for production
+# - Make sure terraform.tfvars is in .gitignore

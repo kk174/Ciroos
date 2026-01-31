@@ -1,0 +1,215 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apm-test-app
+  namespace: petclinic
+data:
+  app.py: |
+    from flask import Flask, jsonify
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.instrumentation.flask import FlaskInstrumentor
+    from opentelemetry.instrumentation.requests import RequestsInstrumentor
+    from opentelemetry.propagate import set_global_textmap, inject
+    from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+    import time
+    import random
+    import requests
+
+    # Set up trace context propagation
+    set_global_textmap(TraceContextTextMapPropagator())
+
+    # Configure OpenTelemetry
+    resource = Resource.create({
+        "service.name": "apm-test-app",
+        "service.version": "1.0.0",
+        "deployment.environment": "demo",
+        "cluster.name": "petclinic-c1",
+        "cluster.region": "us-east-1"
+    })
+
+    trace.set_tracer_provider(TracerProvider(resource=resource))
+    tracer = trace.get_tracer(__name__)
+
+    # Configure OTLP exporter to send to collector
+    otlp_exporter = OTLPSpanExporter(
+        endpoint="otel-collector.observability.svc.cluster.local:4317",
+        insecure=True
+    )
+
+    trace.get_tracer_provider().add_span_processor(
+        BatchSpanProcessor(otlp_exporter)
+    )
+
+    app = Flask(__name__)
+    FlaskInstrumentor().instrument_app(app)
+    RequestsInstrumentor().instrument()
+
+    # C2 backend service URL (internal)
+    BACKEND_SERVICE_URL = "http://apm-backend-app.petclinic.svc.cluster.local:8080"
+
+    @app.route('/health')
+    def health():
+        with tracer.start_as_current_span("health_check") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/health")
+            span.set_attribute("cluster", "C1")
+            return jsonify({"status": "healthy", "service": "apm-test-app", "cluster": "C1"})
+
+    @app.route('/api/users')
+    def get_users():
+        with tracer.start_as_current_span("get_users") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/users")
+            span.set_attribute("cluster", "C1")
+
+            # Simulate database query in C1
+            with tracer.start_as_current_span("database.query.users") as db_span:
+                db_span.set_attribute("db.system", "postgresql")
+                db_span.set_attribute("db.statement", "SELECT * FROM users")
+                db_span.set_attribute("cluster", "C1")
+                time.sleep(random.uniform(0.01, 0.05))
+
+            users = [
+                {"id": 1, "name": "Alice"},
+                {"id": 2, "name": "Bob"},
+                {"id": 3, "name": "Charlie"}
+            ]
+            return jsonify({"users": users, "count": len(users), "cluster": "C1"})
+
+    @app.route('/api/orders')
+    def get_orders():
+        with tracer.start_as_current_span("get_orders") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/orders")
+            span.set_attribute("cluster", "C1")
+            span.set_attribute("cross_region", True)
+
+            # Call C2 backend for inventory (cross-region)
+            with tracer.start_as_current_span("call_backend_inventory") as backend_span:
+                backend_span.set_attribute("service.name", "apm-backend-service")
+                backend_span.set_attribute("target.cluster", "C2")
+                backend_span.set_attribute("target.region", "us-west-2")
+
+                try:
+                    headers = {}
+                    inject(headers)  # Inject trace context for distributed tracing
+                    response = requests.get(f"{BACKEND_SERVICE_URL}/api/inventory", headers=headers, timeout=5)
+                    inventory = response.json() if response.status_code == 200 else {}
+                except Exception as e:
+                    backend_span.set_attribute("error", True)
+                    backend_span.set_attribute("error.message", str(e))
+                    inventory = {}
+
+            # Call C2 backend for shipping (cross-region)
+            with tracer.start_as_current_span("call_backend_shipping") as shipping_span:
+                shipping_span.set_attribute("service.name", "apm-backend-service")
+                shipping_span.set_attribute("target.cluster", "C2")
+                shipping_span.set_attribute("target.region", "us-west-2")
+
+                try:
+                    headers = {}
+                    inject(headers)
+                    response = requests.get(f"{BACKEND_SERVICE_URL}/api/shipping", headers=headers, timeout=5)
+                    shipping = response.json() if response.status_code == 200 else {}
+                except Exception as e:
+                    shipping_span.set_attribute("error", True)
+                    shipping_span.set_attribute("error.message", str(e))
+                    shipping = {}
+
+            # Simulate local database query in C1
+            with tracer.start_as_current_span("database.query.orders") as db_span:
+                db_span.set_attribute("db.system", "postgresql")
+                db_span.set_attribute("db.statement", "SELECT * FROM orders")
+                db_span.set_attribute("cluster", "C1")
+                time.sleep(random.uniform(0.02, 0.08))
+
+            orders = [{"id": i, "total": random.randint(10, 500)} for i in range(1, 6)]
+            return jsonify({
+                "orders": orders,
+                "count": len(orders),
+                "inventory": inventory,
+                "shipping": shipping,
+                "cluster": "C1"
+            })
+
+    @app.route('/api/checkout')
+    def checkout():
+        with tracer.start_as_current_span("checkout") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/checkout")
+            span.set_attribute("cluster", "C1")
+            span.set_attribute("cross_region", True)
+
+            # Call C2 backend for payment processing (cross-region)
+            with tracer.start_as_current_span("call_backend_payment") as payment_span:
+                payment_span.set_attribute("service.name", "apm-backend-service")
+                payment_span.set_attribute("target.cluster", "C2")
+                payment_span.set_attribute("target.region", "us-west-2")
+
+                try:
+                    headers = {}
+                    inject(headers)
+                    response = requests.get(f"{BACKEND_SERVICE_URL}/api/payment/process", headers=headers, timeout=5)
+                    payment_result = response.json()
+
+                    if response.status_code != 200:
+                        payment_span.set_attribute("error", True)
+                        payment_span.set_attribute("payment.status", "failed")
+                        return jsonify({"error": "Payment failed", "details": payment_result}), 402
+
+                    payment_span.set_attribute("payment.status", "success")
+                except Exception as e:
+                    payment_span.set_attribute("error", True)
+                    payment_span.set_attribute("error.message", str(e))
+                    return jsonify({"error": "Payment service unavailable"}), 503
+
+            return jsonify({
+                "status": "success",
+                "order_id": f"order_{random.randint(10000, 99999)}",
+                "payment": payment_result,
+                "cluster": "C1"
+            })
+
+    @app.route('/api/slow')
+    def slow_endpoint():
+        with tracer.start_as_current_span("slow_operation") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/slow")
+            span.set_attribute("operation.type", "slow")
+            span.set_attribute("cluster", "C1")
+
+            # Simulate slow operation
+            time.sleep(random.uniform(0.5, 1.5))
+            return jsonify({"status": "completed", "duration": "slow", "cluster": "C1"})
+
+    @app.route('/api/error')
+    def error_endpoint():
+        with tracer.start_as_current_span("error_operation") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/error")
+            span.set_attribute("cluster", "C1")
+
+            # Simulate error
+            span.set_attribute("error", True)
+            span.set_attribute("error.type", "SimulatedError")
+            from opentelemetry.trace import Status, StatusCode
+            span.set_status(Status(StatusCode.ERROR, "Simulated error for testing"))
+
+            return jsonify({"error": "Internal Server Error", "message": "Simulated error", "cluster": "C1"}), 500
+
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=8080)
+
+  requirements.txt: |
+    flask==3.0.0
+    requests==2.31.0
+    opentelemetry-api==1.22.0
+    opentelemetry-sdk==1.22.0
+    opentelemetry-instrumentation-flask==0.43b0
+    opentelemetry-instrumentation-requests==0.43b0
+    opentelemetry-exporter-otlp-proto-grpc==1.22.0

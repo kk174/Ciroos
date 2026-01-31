@@ -1,0 +1,213 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apm-backend-app
+  namespace: petclinic
+data:
+  app.py: |
+    from flask import Flask, jsonify, request
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.instrumentation.flask import FlaskInstrumentor
+    import time
+    import random
+
+    # Configure OpenTelemetry
+    resource = Resource.create({
+        "service.name": "apm-backend-service",
+        "service.version": "1.0.0",
+        "deployment.environment": "demo",
+        "cluster.name": "petclinic-c2",
+        "cluster.region": "us-west-2"
+    })
+
+    trace.set_tracer_provider(TracerProvider(resource=resource))
+    tracer = trace.get_tracer(__name__)
+
+    # Configure OTLP exporter to send to collector
+    otlp_exporter = OTLPSpanExporter(
+        endpoint="otel-collector.observability.svc.cluster.local:4317",
+        insecure=True
+    )
+
+    trace.get_tracer_provider().add_span_processor(
+        BatchSpanProcessor(otlp_exporter)
+    )
+
+    app = Flask(__name__)
+    FlaskInstrumentor().instrument_app(app)
+
+    @app.route('/health')
+    def health():
+        with tracer.start_as_current_span("health_check") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/health")
+            return jsonify({"status": "healthy", "service": "apm-backend-service", "cluster": "C2", "region": "us-west-2"})
+
+    @app.route('/api/inventory')
+    def get_inventory():
+        with tracer.start_as_current_span("get_inventory") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/inventory")
+            span.set_attribute("cluster", "C2")
+
+            # Simulate database query
+            with tracer.start_as_current_span("database.query.inventory") as db_span:
+                db_span.set_attribute("db.system", "postgresql")
+                db_span.set_attribute("db.statement", "SELECT * FROM inventory")
+                db_span.set_attribute("db.cluster", "C2")
+                time.sleep(random.uniform(0.02, 0.06))
+
+            items = [
+                {"id": 1, "name": "Product A", "stock": 100},
+                {"id": 2, "name": "Product B", "stock": 50},
+                {"id": 3, "name": "Product C", "stock": 75}
+            ]
+            return jsonify({"items": items, "count": len(items), "cluster": "C2"})
+
+    @app.route('/api/shipping')
+    def get_shipping():
+        with tracer.start_as_current_span("get_shipping") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/shipping")
+            span.set_attribute("cluster", "C2")
+
+            # Simulate backend processing
+            with tracer.start_as_current_span("calculate_shipping_cost") as calc_span:
+                calc_span.set_attribute("operation", "calculate")
+                time.sleep(random.uniform(0.01, 0.04))
+
+            with tracer.start_as_current_span("database.query.shipping") as db_span:
+                db_span.set_attribute("db.system", "postgresql")
+                db_span.set_attribute("db.statement", "SELECT * FROM shipping_rates")
+                time.sleep(random.uniform(0.02, 0.05))
+
+            return jsonify({
+                "shipping_options": [
+                    {"method": "standard", "cost": 5.99, "days": 5},
+                    {"method": "express", "cost": 12.99, "days": 2}
+                ],
+                "cluster": "C2"
+            })
+
+    @app.route('/api/payment/process')
+    def process_payment():
+        with tracer.start_as_current_span("process_payment") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/payment/process")
+            span.set_attribute("cluster", "C2")
+
+            # Simulate payment processing (sometimes fails)
+            if random.random() < 0.2:  # 20% failure rate
+                span.set_attribute("error", True)
+                span.set_attribute("error.type", "PaymentDeclined")
+                from opentelemetry.trace import Status, StatusCode
+                span.set_status(Status(StatusCode.ERROR, "Payment declined"))
+                return jsonify({"error": "Payment declined", "cluster": "C2"}), 402
+
+            with tracer.start_as_current_span("payment_gateway.call") as gateway_span:
+                gateway_span.set_attribute("gateway", "stripe")
+                time.sleep(random.uniform(0.1, 0.3))
+
+            return jsonify({"status": "success", "transaction_id": f"tx_{random.randint(10000, 99999)}", "cluster": "C2"})
+
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=8080)
+
+  requirements.txt: |
+    flask==3.0.0
+    opentelemetry-api==1.22.0
+    opentelemetry-sdk==1.22.0
+    opentelemetry-instrumentation-flask==0.43b0
+    opentelemetry-exporter-otlp-proto-grpc==1.22.0
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apm-backend-app
+  namespace: petclinic
+  labels:
+    app: apm-backend-app
+    tier: backend
+    cluster: c2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: apm-backend-app
+  template:
+    metadata:
+      labels:
+        app: apm-backend-app
+        tier: backend
+        cluster: c2
+    spec:
+      containers:
+      - name: app
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            pip install --no-cache-dir -r /app/requirements.txt
+            python /app/app.py
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: app-code
+          mountPath: /app
+        env:
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "otel-collector.observability.svc.cluster.local:4317"
+        - name: OTEL_SERVICE_NAME
+          value: "apm-backend-service"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "deployment.environment=demo,cluster.name=petclinic-c2,cluster.region=us-west-2"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 5
+      volumes:
+      - name: app-code
+        configMap:
+          name: apm-backend-app
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apm-backend-app
+  namespace: petclinic
+  labels:
+    app: apm-backend-app
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+spec:
+  type: LoadBalancer
+  selector:
+    app: apm-backend-app
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http

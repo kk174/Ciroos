@@ -1,0 +1,209 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apm-test-app
+  namespace: petclinic
+data:
+  app.py: |
+    from flask import Flask, jsonify
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.instrumentation.flask import FlaskInstrumentor
+    import time
+    import random
+
+    # Configure OpenTelemetry
+    resource = Resource.create({
+        "service.name": "apm-test-app",
+        "service.version": "1.0.0",
+        "deployment.environment": "demo",
+        "cluster.name": "petclinic-c1",
+        "cluster.region": "us-east-1"
+    })
+
+    trace.set_tracer_provider(TracerProvider(resource=resource))
+    tracer = trace.get_tracer(__name__)
+
+    # Configure OTLP exporter to send to collector
+    otlp_exporter = OTLPSpanExporter(
+        endpoint="otel-collector.observability.svc.cluster.local:4317",
+        insecure=True
+    )
+
+    trace.get_tracer_provider().add_span_processor(
+        BatchSpanProcessor(otlp_exporter)
+    )
+
+    app = Flask(__name__)
+    FlaskInstrumentor().instrument_app(app)
+
+    @app.route('/health')
+    def health():
+        with tracer.start_as_current_span("health_check") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/health")
+            return jsonify({"status": "healthy", "service": "apm-test-app"})
+
+    @app.route('/api/users')
+    def get_users():
+        with tracer.start_as_current_span("get_users") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/users")
+
+            # Simulate database query
+            with tracer.start_as_current_span("database.query") as db_span:
+                db_span.set_attribute("db.system", "postgresql")
+                db_span.set_attribute("db.statement", "SELECT * FROM users")
+                time.sleep(random.uniform(0.01, 0.05))
+
+            users = [
+                {"id": 1, "name": "Alice"},
+                {"id": 2, "name": "Bob"},
+                {"id": 3, "name": "Charlie"}
+            ]
+            return jsonify({"users": users, "count": len(users)})
+
+    @app.route('/api/orders')
+    def get_orders():
+        with tracer.start_as_current_span("get_orders") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/orders")
+
+            # Simulate multiple backend calls
+            with tracer.start_as_current_span("fetch_from_cache") as cache_span:
+                cache_span.set_attribute("cache.hit", random.choice([True, False]))
+                time.sleep(random.uniform(0.005, 0.02))
+
+            with tracer.start_as_current_span("database.query") as db_span:
+                db_span.set_attribute("db.system", "postgresql")
+                db_span.set_attribute("db.statement", "SELECT * FROM orders")
+                time.sleep(random.uniform(0.02, 0.08))
+
+            orders = [{"id": i, "total": random.randint(10, 500)} for i in range(1, 6)]
+            return jsonify({"orders": orders, "count": len(orders)})
+
+    @app.route('/api/slow')
+    def slow_endpoint():
+        with tracer.start_as_current_span("slow_operation") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/slow")
+            span.set_attribute("operation.type", "slow")
+
+            # Simulate slow operation
+            time.sleep(random.uniform(0.5, 1.5))
+            return jsonify({"status": "completed", "duration": "slow"})
+
+    @app.route('/api/error')
+    def error_endpoint():
+        with tracer.start_as_current_span("error_operation") as span:
+            span.set_attribute("http.method", "GET")
+            span.set_attribute("http.route", "/api/error")
+
+            # Simulate error
+            span.set_attribute("error", True)
+            span.set_attribute("error.type", "SimulatedError")
+            from opentelemetry.trace import Status, StatusCode
+            span.set_status(Status(StatusCode.ERROR, "Simulated error for testing"))
+
+            return jsonify({"error": "Internal Server Error", "message": "Simulated error"}), 500
+
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=8080)
+
+  requirements.txt: |
+    flask==3.0.0
+    opentelemetry-api==1.22.0
+    opentelemetry-sdk==1.22.0
+    opentelemetry-instrumentation-flask==0.43b0
+    opentelemetry-exporter-otlp-proto-grpc==1.22.0
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apm-test-app
+  namespace: petclinic
+  labels:
+    app: apm-test-app
+    tier: frontend
+    cluster: c1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: apm-test-app
+  template:
+    metadata:
+      labels:
+        app: apm-test-app
+        tier: frontend
+        cluster: c1
+    spec:
+      containers:
+      - name: app
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            pip install --no-cache-dir -r /app/requirements.txt
+            python /app/app.py
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: app-code
+          mountPath: /app
+        env:
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "otel-collector.observability.svc.cluster.local:4317"
+        - name: OTEL_SERVICE_NAME
+          value: "apm-test-app"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "deployment.environment=demo,cluster.name=petclinic-c1,cluster.region=us-east-1"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 5
+      volumes:
+      - name: app-code
+        configMap:
+          name: apm-test-app
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apm-test-app
+  namespace: petclinic
+  labels:
+    app: apm-test-app
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+spec:
+  type: LoadBalancer
+  selector:
+    app: apm-test-app
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http

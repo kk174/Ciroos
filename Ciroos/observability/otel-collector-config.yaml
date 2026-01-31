@@ -1,0 +1,209 @@
+# OpenTelemetry Collector Configuration for Splunk Observability Cloud
+# This ConfigMap contains the OTel collector configuration for both C1 and C2 clusters
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: observability
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      # Kubernetes cluster receiver - collects cluster-level metrics
+      k8s_cluster:
+        auth_type: serviceAccount
+        node_conditions_to_report: [Ready, MemoryPressure, DiskPressure, PIDPressure, NetworkUnavailable]
+        allocatable_types_to_report: [cpu, memory, storage, ephemeral-storage]
+
+      # Kubelet stats receiver - collects pod and container metrics
+      kubeletstats:
+        auth_type: serviceAccount
+        endpoint: https://${K8S_NODE_NAME}:10250
+        insecure_skip_verify: true
+        metric_groups:
+          - pod
+          - container
+          - node
+
+      # OTLP receiver for application traces and metrics
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+      # Prometheus receiver for scraping metrics
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: 'kubernetes-pods'
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+                  regex: true
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                  action: replace
+                  target_label: __metrics_path__
+                  regex: (.+)
+                - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+                  action: replace
+                  regex: ([^:]+)(?::\d+)?;(\d+)
+                  replacement: $$1:$$2
+                  target_label: __address__
+
+      # Filelog receiver for container logs
+      filelog:
+        include:
+          - /var/log/pods/*/*/*.log
+        exclude:
+          - /var/log/pods/*/otel-collector*/*.log
+        include_file_path: true
+        include_file_name: false
+        operators:
+          # Parse container log format: timestamp stream F message
+          - type: regex_parser
+            regex: '^(?P<time>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z) (?P<stream>stdout|stderr) (?P<logtag>F|P) (?P<log>.*)$'
+            timestamp:
+              parse_from: attributes.time
+              layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+
+          # Extract JSON from log field if present
+          - type: json_parser
+            parse_from: attributes.log
+            parse_to: attributes
+            if: 'attributes.log != nil and attributes.log matches "^\\{"'
+
+          # Extract Kubernetes metadata from file path
+          - type: regex_parser
+            regex: '^/var/log/pods/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<pod_uid>[^/]+)/(?P<container_name>[^/]+)/(?P<restart_count>\d+)\.log$'
+            parse_from: attributes["log.file.path"]
+
+    processors:
+      # Batch processor - reduces API calls and improves performance
+      batch:
+        timeout: 10s
+        send_batch_size: 1024
+
+      # Memory limiter - prevents OOM
+      memory_limiter:
+        check_interval: 5s
+        limit_mib: 512
+        spike_limit_mib: 128
+
+      # Resource processor - adds cluster metadata
+      resource:
+        attributes:
+          - key: cluster.name
+            value: ${CLUSTER_NAME}
+            action: upsert
+          - key: cluster.region
+            value: ${CLUSTER_REGION}
+            action: upsert
+          - key: k8s.cluster.name
+            value: ${CLUSTER_NAME}
+            action: upsert
+
+      # Resource detection processor - auto-detects cloud provider metadata
+      resourcedetection:
+        detectors: [env, system, ec2, eks]
+        timeout: 5s
+        override: false
+
+      # K8s attributes processor - enriches with Kubernetes metadata
+      k8sattributes:
+        auth_type: serviceAccount
+        passthrough: false
+        extract:
+          metadata:
+            - k8s.namespace.name
+            - k8s.deployment.name
+            - k8s.statefulset.name
+            - k8s.daemonset.name
+            - k8s.cronjob.name
+            - k8s.job.name
+            - k8s.node.name
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.pod.start_time
+          labels:
+            - tag_name: k8s.pod.label.app
+              key: app
+              from: pod
+            - tag_name: k8s.pod.label.tier
+              key: tier
+              from: pod
+            - tag_name: k8s.pod.label.cluster
+              key: cluster
+              from: pod
+
+      # Filter processor - remove unnecessary logs
+      filter:
+        logs:
+          exclude:
+            match_type: regexp
+            record_attributes:
+              - key: k8s.namespace.name
+                value: (kube-system|kube-public|kube-node-lease)
+
+    exporters:
+      # Splunk SignalFx exporter for metrics
+      signalfx:
+        access_token: "${SPLUNK_ACCESS_TOKEN}"
+        realm: "${SPLUNK_REALM}"
+        sync_host_metadata: true
+        # Send logs along with metrics
+        send_compatible_metrics: true
+        exclude_metrics: []
+
+      # Note: Splunk Observability Cloud focuses on metrics and traces
+      # For production log aggregation, use Splunk Enterprise/Cloud or other log platforms
+      # For this demo, logs are collected and can be viewed via kubectl logs
+
+      # OTLP exporter for traces to Splunk APM
+      otlp/traces:
+        endpoint: "ingest.${SPLUNK_REALM}.signalfx.com:443"
+        headers:
+          X-SF-Token: "${SPLUNK_ACCESS_TOKEN}"
+        tls:
+          insecure: false
+
+      # Logging exporter for debugging (optional)
+      logging:
+        loglevel: info
+        sampling_initial: 5
+        sampling_thereafter: 200
+
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+      zpages:
+        endpoint: 0.0.0.0:55679
+      memory_ballast:
+        size_mib: 256
+
+    service:
+      extensions: [health_check, zpages, memory_ballast]
+      pipelines:
+        # Logs pipeline
+        # Note: Logs are collected and enriched with K8s metadata
+        # For demo purposes, logs are output to collector stdout (kubectl logs)
+        # In production, send to Splunk Enterprise/Cloud or dedicated log platform
+        logs:
+          receivers: [filelog, otlp]
+          processors: [memory_limiter, k8sattributes, resource, resourcedetection, batch, filter]
+          exporters: [logging]
+
+        # Metrics pipeline
+        metrics:
+          receivers: [otlp, kubeletstats, k8s_cluster, prometheus]
+          processors: [memory_limiter, k8sattributes, resource, resourcedetection, batch]
+          exporters: [signalfx, logging]
+
+        # Traces pipeline
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, resource, resourcedetection, batch]
+          exporters: [otlp/traces, logging]
