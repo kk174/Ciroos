@@ -50,7 +50,11 @@ Ciroos/
 │
 ├── scripts/                   # Helper scripts
 │   ├── pre-demo-check.sh      # Pre-demo health check
-│   └── inject-fault.sh        # Fault injection for demo
+│   ├── inject-fault.sh        # Simple fault injection
+│   ├── inject-fault-with-traffic.sh  # Fault injection + traffic (triggers both alerts)
+│   ├── test-alert.sh          # Test APM alert configuration
+│   ├── continuous-traffic.sh  # Keep traffic flowing to Splunk
+│   └── webhook-receiver.js    # Local webhook receiver for Ciroos demo
 │
 ├── documentation/             # Complete project documentation
 │   ├── README.md              # Documentation index
@@ -219,6 +223,14 @@ cd scripts
               │  Splunk            │
               │  Observability     │
               │  Cloud (us1)       │
+              └─────────┬──────────┘
+                        │
+                        │ Webhooks (Alerts)
+                        ▼
+              ┌────────────────────┐
+              │  Ciroos AI         │
+              │  Investigation     │
+              │  Platform          │
               └────────────────────┘
 ```
 
@@ -326,6 +338,26 @@ python3 verify_security.py
 - Library: opentelemetry-instrumentation-flask
 - Propagation: W3C TraceContext
 
+### Alert Configuration
+
+**APM Error Rate Alert:**
+- Detector: High Error Rate - Backend Service
+- Threshold: Error rate > 40% for 1 minute
+- Signal: `errors.count / requests.count * 100`
+- Webhook: Sends alert to Ciroos AI platform
+
+**Infrastructure Alert:**
+- Detector: Low Pod Count - Backend Service
+- Threshold: Pod count < 2 for 30 seconds
+- Signal: `kubernetes.container_ready` count
+- Webhook: Sends alert to Ciroos AI platform
+
+**Webhook Integration:**
+- URL: https://webhook.site/d1ebc87a-cc67-4f20-aad2-920443514976
+- Format: JSON payload with incident details
+- Action: Triggers Ciroos AI investigation
+- Documentation: [WEBHOOK_INTEGRATION.md](documentation/WEBHOOK_INTEGRATION.md)
+
 ---
 
 ## 🎬 Demo Guide
@@ -382,16 +414,34 @@ See [documentation/LIVE_DEMO_SCRIPT.md](documentation/LIVE_DEMO_SCRIPT.md) for c
 
 ### Fault Injection
 
+**Simple Fault (Infrastructure Alert Only):**
 ```bash
 cd scripts
 ./inject-fault.sh
 ```
+- Deletes C2 backend pod
+- Triggers Infrastructure alert (pod count < 2)
+- Kubernetes auto-healing recovers pod in 30-40 seconds
 
-**Simulates:**
-- Pod failure in C2 backend cluster
-- 10-15 second service outage
-- Kubernetes auto-healing
-- Real user-facing impact
+**Full Fault Demo (Both Alerts):**
+```bash
+cd scripts
+./inject-fault-with-traffic.sh
+```
+- Deletes C2 backend pod AND generates high traffic
+- Triggers Infrastructure alert at T+30s (pod count < 2)
+- Triggers APM alert at T+60s (error rate > 40%)
+- Sends alerts to Ciroos AI platform via webhook
+- Demonstrates complete incident detection and notification flow
+
+**Background Traffic Generator:**
+```bash
+cd scripts
+./continuous-traffic.sh
+```
+- Keeps Splunk populated with metrics
+- Sends 5 requests every 5 seconds
+- Mixed endpoint traffic (/health, /api/users, /api/orders, /api/checkout)
 
 ---
 

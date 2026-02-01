@@ -13,7 +13,9 @@
 | 3 | **AWS Load Balancers** | https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#LoadBalancers: |
 | 4 | **Splunk K8s Navigator** | https://app.us1.signalfx.com/ → Infrastructure → Kubernetes |
 | 5 | **Splunk APM** | https://app.us1.signalfx.com/apm |
-| 6 | **Terminal** | kubectl connected to C1 |
+| 6 | **Splunk Alerts** | https://app.us1.signalfx.com/ → Alerts & Detectors |
+| 7 | **Webhook Monitor** | https://webhook.site/d1ebc87a-cc67-4f20-aad2-920443514976 |
+| 8 | **Terminal** | kubectl connected to C1 |
 
 ---
 
@@ -51,10 +53,32 @@ cd /Users/kanu/Desktop/Ciroos/security-verification
 python3 verify_security.py
 ```
 
-### Fault Injection
+### Background Traffic (Optional - Start 30min before demo)
 ```bash
-cd /Users/kanu/Desktop/Ciroos
+cd /Users/kanu/Desktop/projects/Ciroos/scripts
+./continuous-traffic.sh &
+# Keeps Splunk populated with metrics
+```
+
+### Webhook Receiver (Optional)
+```bash
+cd /Users/kanu/Desktop/projects/Ciroos/scripts
+node webhook-receiver.js &
+# Or use webhook.site dashboard
+```
+
+### Fault Injection - Simple (Infrastructure Alert Only)
+```bash
+cd /Users/kanu/Desktop/projects/Ciroos/scripts
 ./inject-fault.sh
+```
+
+### Fault Injection - Full Demo (Both Alerts - Recommended)
+```bash
+cd /Users/kanu/Desktop/projects/Ciroos/scripts
+./inject-fault-with-traffic.sh
+# Triggers both Infrastructure and APM alerts
+# Sends webhooks to Ciroos
 ```
 
 ### Manual C1→C2 Connectivity Test
@@ -113,6 +137,8 @@ kubectl exec -n petclinic $POD -- curl -s http://ac3dc550dad9847ea805e20c963ee7b
 ✓ **Latency:** Timeout errors (5000ms)
 ✓ **Service Map:** Shows degraded service in red/yellow
 ✓ **Infrastructure:** Pod count drops, then recovers
+✓ **Alerts:** Infrastructure alert (T+30s) + APM alert (T+60s)
+✓ **Webhooks:** Both alerts send to Ciroos AI platform
 
 ### Ciroos Value (Part 6)
 ✓ **Manual:** 5+ minutes across multiple tools
@@ -168,7 +194,10 @@ Before demo starts:
 - [ ] All browser tabs loaded
 - [ ] Splunk showing live data (both clusters)
 - [ ] Application endpoints responding
-- [ ] inject-fault.sh tested and ready
+- [ ] inject-fault-with-traffic.sh tested and ready
+- [ ] Alerts configured in Splunk with webhooks
+- [ ] Webhook receiver running or webhook.site dashboard open
+- [ ] Background traffic running (continuous-traffic.sh)
 - [ ] Architecture diagram visible
 - [ ] Terminal with kubectl ready
 

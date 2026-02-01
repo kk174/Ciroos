@@ -23,6 +23,19 @@
 
 **30 Minutes Before Demo:**
 
+### 0. Start Background Traffic Generator (Optional but Recommended)
+
+```bash
+cd /Users/kanu/Desktop/projects/Ciroos/scripts
+./continuous-traffic.sh &
+```
+
+**Why:**
+- Keeps Splunk populated with baseline metrics
+- Ensures containers and services remain visible in dashboards
+- Provides realistic traffic patterns during demo
+- Press Ctrl+C to stop when demo is complete
+
 ### 1. Verify Infrastructure Status
 
 ```bash
@@ -96,8 +109,16 @@ https://app.us1.signalfx.com/
 https://app.us1.signalfx.com/apm
 ```
 
-**Tab 6: Terminal Window**
+**Tab 6: Terminal Window (kubectl)**
 - Ready with kubectl connected to C1 cluster
+
+**Tab 7: Terminal Window (webhook receiver) - Optional**
+```bash
+cd /Users/kanu/Desktop/projects/Ciroos/scripts
+node webhook-receiver.js
+```
+- Leave this running in background to receive alert webhooks
+- Alternatively, use webhook.site dashboard to monitor webhooks
 
 ### 4. Verify Splunk Data
 
@@ -556,39 +577,81 @@ http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws
 - Error rate: ~20% (expected due to simulated payment failures)
 - Latency: Normal range (50-100ms)
 
-### 4.2 Inject Fault - Delete C2 Backend Pod
+### 4.2 Inject Fault - Full Demo (Infrastructure + APM Alerts)
 
 **Action:** Switch to Terminal
 
-**Run fault injection script:**
+**Option 1: Full Demo Script (Recommended - Triggers Both Alerts):**
 
 ```bash
 # Make sure you're in the right directory
-cd /Users/kanu/Desktop/Ciroos
+cd /Users/kanu/Desktop/projects/Ciroos/scripts
 
-# Run the fault injection script
+# Run the full fault injection with traffic generation
+./inject-fault-with-traffic.sh
+```
+
+**What This Does:**
+1. Deletes C2 backend pod (triggers Infrastructure alert at T+30s)
+2. Generates high traffic for 60 seconds (triggers APM error rate alert at T+60s)
+3. Both alerts send webhooks to Ciroos AI platform
+4. Demonstrates complete incident detection and notification flow
+
+**Expected Timeline:**
+```
+T+0s:  Pod deleted
+T+30s: Infrastructure Alert fires → Webhook sent to Ciroos
+T+60s: APM Error Rate Alert fires → Webhook sent to Ciroos
+T+40s: Pod automatically recovers
+```
+
+**Option 2: Simple Pod Deletion (Infrastructure Alert Only):**
+
+```bash
+cd /Users/kanu/Desktop/projects/Ciroos/scripts
 ./inject-fault.sh
 ```
 
 **Expected Output:**
 ```
-Injecting fault: Deleting apm-backend-app pod in C2...
-Deleting pod: apm-backend-app-7d8f9c5b6d-x9k2m
-pod "apm-backend-app-7d8f9c5b6d-x9k2m" deleted
-Fault injected! Pod is being recreated...
-Wait 10-15 seconds for pod restart...
+==============================================
+  Ciroos Demo - Full Fault Injection
+==============================================
 
-NAME                                 READY   STATUS        RESTARTS   AGE
-apm-backend-app-7d8f9c5b6d-x9k2m     0/1     Terminating   0          25m
-apm-backend-app-7d8f9c5b6d-n7k5p     0/1     Pending       0          0s
-apm-backend-app-7d8f9c5b6d-n7k5p     0/1     ContainerCreating   0     2s
-apm-backend-app-7d8f9c5b6d-n7k5p     1/1     Running             0     15s
+This script will:
+  1. Delete backend pod in C2 (Infrastructure alert)
+  2. Generate high traffic (APM error rate alert)
+  3. Both alerts should fire!
+
+Current backend pods in C2:
+NAME                                 READY   STATUS    RESTARTS   AGE
+apm-backend-app-7d8f9c5b6d-x9k2m     1/1     Running   0          25m
+
+⚠️  Ready to inject fault and generate traffic
+Press ENTER to continue (or Ctrl+C to cancel)...
+
+💥 STEP 1: Deleting pod apm-backend-app-7d8f9c5b6d-x9k2m
+pod "apm-backend-app-7d8f9c5b6d-x9k2m" deleted
+✓ Pod deleted!
+
+⚡ STEP 2: Generating high traffic (60 seconds)
+   This will stress the single remaining pod and trigger error rate alert
+   Sent 50 requests...
+   Sent 100 requests...
+   ...
+✓ Traffic generation complete!
+
+Expected Results:
+⏰ T+30 seconds: Infrastructure Alert should fire (Pod count below 2)
+⏰ T+60 seconds: APM Error Rate Alert should fire (Error rate > 40%)
 ```
 
 **Talking Points:**
 - "I'm simulating a pod failure in the C2 backend cluster"
 - "This could happen in real life due to OOM kill, node failure, or deployment issues"
-- "Kubernetes will automatically recreate the pod, but there will be a 10-15 second outage"
+- "While Kubernetes auto-heals the pod, the single remaining pod gets overwhelmed with traffic"
+- "This demonstrates how infrastructure issues can cascade into application performance problems"
+- "Both alerts will send webhooks to the Ciroos AI platform for automated investigation"
 
 ### 4.3 Observe Failure in Application
 
@@ -709,7 +772,72 @@ http://a9dd2c5fde37e4c6abd04a564ea3ef95-a64aa6c61219d593.elb.us-east-1.amazonaws
 - "This correlates with the APM error spike we just saw"
 - "Having both APM and infrastructure in the same platform makes root cause analysis much faster"
 
-### 5.4 Show Service Map State Change
+### 5.4 Show Alert Webhooks to Ciroos
+
+**Action:** Check webhook receiver or webhook.site
+
+**Option 1: If running local webhook receiver:**
+```bash
+# Check the terminal where webhook-receiver.js is running
+# You should see output like:
+🚨 ALERT RECEIVED FROM SPLUNK
+  Incident ID: Exxxxxxxxxxx
+  Detector: Low Pod Count - Backend Service
+  Severity: Critical
+  Triggered: 2026-02-01T03:45:23Z
+✅ CIROOS AI INVESTIGATION TRIGGERED
+
+🚨 ALERT RECEIVED FROM SPLUNK
+  Incident ID: Eyyyyyyyyyyyy
+  Detector: High Error Rate - Backend Service
+  Severity: Critical
+  Triggered: 2026-02-01T03:46:15Z
+✅ CIROOS AI INVESTIGATION TRIGGERED
+```
+
+**Option 2: Check webhook.site:**
+- Navigate to: https://webhook.site/d1ebc87a-cc67-4f20-aad2-920443514976
+- Show the two webhook POST requests received
+- Click to expand and show JSON payload with incident details
+
+**Talking Points:**
+- "Both alerts automatically sent webhooks to the Ciroos AI platform"
+- "First alert (T+30s): Infrastructure detector noticed pod count dropped below 2"
+- "Second alert (T+60s): APM detector caught error rate exceeding 40%"
+- "In production, these webhooks would trigger Ciroos to automatically start investigating"
+- "Ciroos would correlate both alerts, recognize they're related to the same incident"
+- "The webhook payload includes all context: detector name, severity, metrics, timestamps"
+
+### 5.5 Show Alerts in Splunk Console
+
+**Action:** Go to Splunk → Alerts & Detectors
+
+**Show:**
+1. **Infrastructure Alert:**
+   - Name: "Low Pod Count - Backend Service"
+   - Status: Triggered (red) or Recently Triggered
+   - Click to view details:
+     - Signal: `kubernetes.container_ready` count
+     - Threshold: < 2 for 30 seconds
+     - Triggered at: [timestamp]
+     - Webhook action configured
+
+2. **APM Alert:**
+   - Name: "High Error Rate - Backend Service"
+   - Status: Triggered (red) or Recently Triggered
+   - Click to view details:
+     - Signal: `(errors.count / requests.count) * 100`
+     - Threshold: > 40% for 1 minute
+     - Triggered at: [timestamp]
+     - Webhook action configured
+
+**Talking Points:**
+- "Splunk detected both the infrastructure issue and the downstream application impact"
+- "The alerts are configured to send webhooks immediately upon triggering"
+- "This demonstrates the complete observability stack: detection → alerting → automation"
+- "With Ciroos, these webhooks would initiate an automated investigation"
+
+### 5.6 Show Service Map State Change
 
 **Action:** Go back to APM → Service Map
 

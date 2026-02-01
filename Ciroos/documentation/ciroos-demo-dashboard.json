@@ -1,0 +1,210 @@
+{
+  "name": "Ciroos Multi-Region Demo Dashboard",
+  "description": "Comprehensive dashboard showing APM and Infrastructure monitoring for Ciroos demo",
+  "charts": [
+    {
+      "chartId": "error-rate",
+      "name": "Error Rate (%)",
+      "description": "Application error rate - fires alert when > 40%",
+      "programText": "A = data('spans.count', filter=filter('sf_service', 'apm-test-app') and filter('error', 'true')).sum().publish(label='Errors')\nB = data('spans.count', filter=filter('sf_service', 'apm-test-app')).sum().publish(label='Total Requests')\nC = ((A/B)*100).publish(label='Error Rate %')",
+      "options": {
+        "type": "TimeSeriesChart",
+        "axes": [
+          {
+            "label": "Error Rate (%)",
+            "min": 0,
+            "max": 100
+          }
+        ],
+        "colorBy": "Metric",
+        "onChartLegendOptions": {
+          "showLegend": true
+        },
+        "constantLines": [
+          {
+            "value": 40,
+            "color": "red",
+            "label": "Alert Threshold"
+          }
+        ]
+      }
+    },
+    {
+      "chartId": "request-rate",
+      "name": "Request Rate (req/sec)",
+      "description": "Total request rate to apm-test-app service",
+      "programText": "A = data('spans.count', filter=filter('sf_service', 'apm-test-app'), rollup='rate').sum().publish(label='Request Rate')",
+      "options": {
+        "type": "TimeSeriesChart",
+        "axes": [
+          {
+            "label": "Requests per Second"
+          }
+        ],
+        "colorBy": "Metric"
+      }
+    },
+    {
+      "chartId": "latency-percentiles",
+      "name": "Latency Percentiles (ms)",
+      "description": "P50, P95, P99 latency for apm-test-app",
+      "programText": "A = data('service.request.duration.ns.p50', filter=filter('sf_service', 'apm-test-app')).mean().scale(0.000001).publish(label='P50')\nB = data('service.request.duration.ns.p95', filter=filter('sf_service', 'apm-test-app')).mean().scale(0.000001).publish(label='P95')\nC = data('service.request.duration.ns.p99', filter=filter('sf_service', 'apm-test-app')).mean().scale(0.000001).publish(label='P99')",
+      "options": {
+        "type": "TimeSeriesChart",
+        "axes": [
+          {
+            "label": "Latency (milliseconds)"
+          }
+        ],
+        "colorBy": "Metric"
+      }
+    },
+    {
+      "chartId": "pod-count",
+      "name": "C2 Backend Pod Count",
+      "description": "Number of ready backend pods - fires alert when < 2",
+      "programText": "A = data('kubernetes.container_ready', filter=filter('kubernetes_namespace', 'petclinic') and filter('k8s.deployment.name', 'apm-backend-app')).count().publish(label='Ready Pods')",
+      "options": {
+        "type": "TimeSeriesChart",
+        "axes": [
+          {
+            "label": "Pod Count",
+            "min": 0
+          }
+        ],
+        "colorBy": "Metric",
+        "constantLines": [
+          {
+            "value": 2,
+            "color": "green",
+            "label": "Expected Count"
+          }
+        ]
+      }
+    },
+    {
+      "chartId": "cpu-usage",
+      "name": "Pod CPU Utilization (%)",
+      "description": "CPU usage across all pods in petclinic namespace",
+      "programText": "A = data('container.cpu.utilization', filter=filter('kubernetes_namespace', 'petclinic')).mean(by=['kubernetes_pod_name']).publish(label='CPU %')",
+      "options": {
+        "type": "TimeSeriesChart",
+        "axes": [
+          {
+            "label": "CPU Utilization (%)",
+            "min": 0,
+            "max": 100
+          }
+        ],
+        "colorBy": "Dimension",
+        "colorByDimension": "kubernetes_pod_name"
+      }
+    },
+    {
+      "chartId": "memory-usage",
+      "name": "Pod Memory Usage (MB)",
+      "description": "Memory usage across all pods in petclinic namespace",
+      "programText": "A = data('container.memory.usage', filter=filter('kubernetes_namespace', 'petclinic')).mean(by=['kubernetes_pod_name']).scale(0.000001).publish(label='Memory MB')",
+      "options": {
+        "type": "TimeSeriesChart",
+        "axes": [
+          {
+            "label": "Memory (MB)"
+          }
+        ],
+        "colorBy": "Dimension",
+        "colorByDimension": "kubernetes_pod_name"
+      }
+    },
+    {
+      "chartId": "cross-region-requests",
+      "name": "Cross-Region Request Count",
+      "description": "Requests from C1 to C2 backend service",
+      "programText": "A = data('spans.count', filter=filter('sf_service', 'apm-backend-app')).sum().publish(label='C2 Backend Requests')",
+      "options": {
+        "type": "TimeSeriesChart",
+        "axes": [
+          {
+            "label": "Request Count"
+          }
+        ],
+        "colorBy": "Metric"
+      }
+    },
+    {
+      "chartId": "cluster-status",
+      "name": "Cluster Health Status",
+      "description": "Overall health of both clusters",
+      "programText": "A = data('kubernetes.deployment.available', filter=filter('kubernetes_cluster', 'petclinic-c1')).sum().publish(label='C1 Available')\nB = data('kubernetes.deployment.available', filter=filter('kubernetes_cluster', 'petclinic-c2')).sum().publish(label='C2 Available')",
+      "options": {
+        "type": "SingleValue",
+        "colorBy": "Metric"
+      }
+    }
+  ],
+  "filters": [],
+  "time": {
+    "type": "relative",
+    "range": 900000
+  },
+  "layout": {
+    "grid": [
+      {
+        "chartId": "error-rate",
+        "row": 0,
+        "column": 0,
+        "width": 6,
+        "height": 2
+      },
+      {
+        "chartId": "pod-count",
+        "row": 0,
+        "column": 6,
+        "width": 6,
+        "height": 2
+      },
+      {
+        "chartId": "request-rate",
+        "row": 2,
+        "column": 0,
+        "width": 4,
+        "height": 2
+      },
+      {
+        "chartId": "latency-percentiles",
+        "row": 2,
+        "column": 4,
+        "width": 4,
+        "height": 2
+      },
+      {
+        "chartId": "cluster-status",
+        "row": 2,
+        "column": 8,
+        "width": 4,
+        "height": 2
+      },
+      {
+        "chartId": "cross-region-requests",
+        "row": 4,
+        "column": 0,
+        "width": 6,
+        "height": 2
+      },
+      {
+        "chartId": "cpu-usage",
+        "row": 4,
+        "column": 6,
+        "width": 3,
+        "height": 2
+      },
+      {
+        "chartId": "memory-usage",
+        "row": 4,
+        "column": 9,
+        "width": 3,
+        "height": 2
+      }
+    ]
+  }
+}
