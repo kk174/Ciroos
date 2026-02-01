@@ -9,3 +9,16 @@
 # Temporary files
 *.tmp
 *.temp
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+
+# Secrets and credentials
+*secret*.yaml
+*secret*.yml
+*.pem
+*.key
