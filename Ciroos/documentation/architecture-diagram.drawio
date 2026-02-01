@@ -105,6 +105,11 @@
           <mxGeometry x="600" y="760" width="400" height="140" as="geometry" />
         </mxCell>
 
+        <!-- Ciroos AI Platform -->
+        <mxCell id="ciroos" value="Ciroos AI Investigation Platform&#xa;&#xa;• Automated root cause analysis&#xa;• Cross-domain correlation&#xa;• AI-driven incident investigation&#xa;• Webhook-triggered automation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fad7ac;strokeColor=#b46504;fontSize=12;fontStyle=1;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="600" y="960" width="400" height="120" as="geometry" />
+        </mxCell>
+
         <!-- Arrows: Internet to WAF -->
         <mxCell id="arrow1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#0000FF;" edge="1" parent="1" source="internet" target="waf">
           <mxGeometry relative="1" as="geometry" />
@@ -195,6 +200,16 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
+        <!-- Arrows: Splunk to Ciroos (Webhooks) -->
+        <mxCell id="arrow12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#B46504;" edge="1" parent="1" source="splunk" target="ciroos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow12-label" value="Alert Webhooks&#xa;(Infrastructure + APM)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontStyle=1;fillColor=#fad7ac;" vertex="1" connectable="0" parent="arrow12">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint x="15" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
         <!-- Legend -->
         <mxCell id="legend" value="Legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=left;verticalAlign=top;fontSize=12;fontStyle=1;spacingLeft=10;spacingTop=5;" vertex="1" parent="1">
           <mxGeometry x="80" y="760" width="460" height="140" as="geometry" />
@@ -240,12 +255,22 @@
           <mxGeometry x="430" y="790" width="180" height="20" as="geometry" />
         </mxCell>
 
+        <mxCell id="legend5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;strokeColor=#B46504;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="360" y="830" as="sourcePoint" />
+            <mxPoint x="420" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend5-text" value="Alert Webhooks to Ciroos AI" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="430" y="820" width="180" height="20" as="geometry" />
+        </mxCell>
+
         <!-- Key Features Box -->
         <mxCell id="features" value="Key Architecture Features" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalAlign=top;fontSize=12;fontStyle=1;spacingLeft=10;spacingTop=5;" vertex="1" parent="1">
           <mxGeometry x="1060" y="760" width="460" height="140" as="geometry" />
         </mxCell>
 
-        <mxCell id="features-text" value="✓ Dual-region EKS deployment (us-east-1 + us-west-2)&#xa;✓ VPC peering for private cross-region connectivity&#xa;✓ WAF protection on public ALB in C1&#xa;✓ Internal-only NLB in C2 (no public access)&#xa;✓ OpenTelemetry distributed tracing across regions&#xa;✓ Splunk Observability Cloud integration&#xa;✓ Infrastructure metrics + APM in single platform&#xa;✓ W3C TraceContext propagation for service map" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=10;spacingTop=10;" vertex="1" parent="1">
+        <mxCell id="features-text" value="✓ Dual-region EKS deployment (us-east-1 + us-west-2)&#xa;✓ VPC peering for private cross-region connectivity&#xa;✓ WAF protection on public ALB in C1&#xa;✓ Internal-only NLB in C2 (no public access)&#xa;✓ OpenTelemetry distributed tracing across regions&#xa;✓ Splunk Observability Cloud integration&#xa;✓ Infrastructure metrics + APM in single platform&#xa;✓ Alert webhooks to Ciroos AI for automated investigation&#xa;✓ W3C TraceContext propagation for service map" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;spacingLeft=10;spacingTop=10;" vertex="1" parent="1">
           <mxGeometry x="1070" y="790" width="440" height="100" as="geometry" />
         </mxCell>
 
