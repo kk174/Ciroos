@@ -1,60 +1,11 @@
-# Terraform
-infrastructure/.terraform/
-infrastructure/.terraform.lock.hcl
-infrastructure/*.tfstate
-infrastructure/*.tfstate.backup
-infrastructure/*.tfvars
-infrastructure/.terraform.tfstate.lock.info
-infrastructure/terraform.tfplan
-infrastructure/crash.log
-
-# Python
-security-verification/__pycache__/
-security-verification/*.pyc
-security-verification/.pytest_cache/
-security-verification/venv/
-security-verification/.venv/
-security-verification/*.egg-info/
-
-# OS Files
+# macOS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Secrets and Credentials
-*.pem
-*.key
-*.crt
-*secret*.yaml
-*token*.txt
-.env
-.env.local
-
-# Kubernetes
-kubeconfig
-*.kubeconfig
-
-# Logs
-*.log
-logs/
+# Microsoft Office temporary files
+~$*.doc*
+~$*.xls*
+~$*.ppt*
 
 # Temporary files
-tmp/
-temp/
 *.tmp
-
-# Archives
-*.zip
-*.tar.gz
-*.tgz
+*.temp
